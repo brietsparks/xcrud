@@ -14,6 +14,7 @@ type Vars struct {
 	Name string
 }
 
+// LoadEnvVars reads environment variables from a file and returns them as a Vars struct
 func LoadEnvVars(filename string) (Vars, error) {
 	err := godotenv.Load(filename)
 
@@ -30,8 +31,7 @@ func LoadEnvVars(filename string) (Vars, error) {
 	}, nil
 }
 
-
-
+// MakeUrl returns a postgres url from a Vars struct
 func MakeUrl(vars Vars) string {
 	return fmt.Sprintf("dbname=%s user=%s password=%s host=%s sslmode=disable",
 		vars.Name,

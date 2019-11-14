@@ -7,6 +7,7 @@ import (
 	"github.com/urfave/cli"
 )
 
+// NewMigrateCommand returns a migration command tree that can be used by a urfave/cli instance
 func NewMigrateCommand(name string, chVars chan data.Vars) cli.Command {
 	var vars data.Vars
 	var mig *migrate.Migrate

@@ -13,14 +13,9 @@ type Store struct {
 func NewStore(vars Vars) (*Store, error) {
 	url := MakeUrl(vars)
 
-	// create a connection (e.g. "postgres", "mysql", or "sqlite3")
 	conn, _ := dbr.Open("postgres", url, nil)
 	conn.SetMaxOpenConns(10)
-
-	// create a session for each business unit of execution (e.g. a web request or goworkers job)
 	sess := conn.NewSession(nil)
-
-	// create a tx from sessions
 	_, err := sess.Begin()
 
 	if err != nil {
@@ -35,6 +30,7 @@ func NewStore(vars Vars) (*Store, error) {
 	}, nil
 }
 
+// CreateUser creates a new user
 func (s *Store) CreateUser(u *User) (*User, error) {
 	if err := s.validate.Struct(u); err != nil {
 		return nil, NewError(err, "invalid user data")
@@ -54,6 +50,8 @@ func (s *Store) CreateUser(u *User) (*User, error) {
 	return u, nil
 }
 
+// UpdateUser updates an existing user.
+// The variadic "fields" arg should contain the field names that should be updated
 func (s *Store) UpdateUser(id int64, u *User, fields ...string) error {
 	if err := s.validate.StructPartial(u, fields...); err != nil {
 		return NewError(err, "invalid user data")
@@ -71,6 +69,7 @@ func (s *Store) UpdateUser(id int64, u *User, fields ...string) error {
 	return nil
 }
 
+// GetUserById gets a user by ID
 func (s *Store) GetUserById(id int64) (*User, error) {
 	u := &User{}
 	retrieved, err := s.getById("users", id, u)
@@ -86,6 +85,7 @@ func (s *Store) GetUserById(id int64) (*User, error) {
 	return retrieved.(*User), err
 }
 
+// DeleteUser deletes a user
 func (s *Store) DeleteUser(id int64) error {
     _, err := s.db.DeleteFrom("users").Where("id = ?", id).Exec()
 
@@ -96,6 +96,7 @@ func (s *Store) DeleteUser(id int64) error {
     return nil
 }
 
+// CreateGroup creates a new group
 func (s *Store) CreateGroup(g *Group) (*Group, error) {
 	if err := s.validate.Struct(g); err != nil {
 		return nil, NewError(err, "invalid group data")
@@ -115,6 +116,8 @@ func (s *Store) CreateGroup(g *Group) (*Group, error) {
 	return g, nil
 }
 
+// UpdateGroup updates an existing group
+// The variadic "fields" arg should contain the field names that should be updated
 func (s *Store) UpdateGroup(id int64, g *Group, fields ...string) error {
 	if err := s.validate.StructPartial(g, fields...); err != nil {
 		return NewError(err, "invalid group data")
@@ -131,6 +134,7 @@ func (s *Store) UpdateGroup(id int64, g *Group, fields ...string) error {
 	return nil
 }
 
+// GetGroupById gets a group by ID
 func (s *Store) GetGroupById(id int64) (*Group, error) {
 	g := &Group{}
 	retrieved, err := s.getById("groups", id, g)
@@ -146,6 +150,7 @@ func (s *Store) GetGroupById(id int64) (*Group, error) {
 	return retrieved.(*Group), err
 }
 
+// DeleteUser deletes a group
 func (s *Store) DeleteGroup(id int64) error {
 	_, err := s.db.DeleteFrom("groups").Where("id = ?", id).Exec()
 
@@ -156,6 +161,7 @@ func (s *Store) DeleteGroup(id int64) error {
 	return nil
 }
 
+// GetUsersByGroupId returns an array of users that belong to a group
 func (s *Store) GetUsersByGroupId(groupId int64) ([]User, error) {
 	var users []User
 
@@ -174,6 +180,7 @@ func (s *Store) GetUsersByGroupId(groupId int64) ([]User, error) {
 	return users, nil
 }
 
+// GetUsersByGroupId returns an array of groups that contain a user
 func (s *Store) GetGroupsByUserId(userId int64) ([]Group, error) {
     var groups []Group
 
@@ -192,6 +199,7 @@ func (s *Store) GetGroupsByUserId(userId int64) ([]Group, error) {
 	return groups, nil
 }
 
+// LinkGroupToUser links a group to a user
 func (s *Store) LinkGroupToUser(groupId int64, userId int64) error {
 	_, err := s.db.
 		InsertInto("groups_users").
@@ -206,7 +214,7 @@ func (s *Store) LinkGroupToUser(groupId int64, userId int64) error {
 	return nil
 }
 
-
+// UnlinkGroupFromUser unlinks a group from a user
 func (s *Store) UnlinkGroupFromUser(groupId int64, userId int64) error {
 	_, err := s.db.
 		DeleteFrom("groups_users").

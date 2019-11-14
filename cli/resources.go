@@ -9,6 +9,7 @@ import (
 	"strconv"
 )
 
+// NewResourcesCommand returns a resources command tree that can be used by a urfave/cli instance
 func NewResourcesCommand(name string, chVars chan data.Vars, logger Logger) cli.Command {
 	var vars data.Vars
 	var store *data.Store

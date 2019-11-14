@@ -9,6 +9,8 @@ import (
 	"runtime"
 )
 
+// NewSchemaMigration creates a migration instance that can be used to
+// apply and rollback schema changes to a database
 func NewSchemaMigration(vars Vars) (*migrate.Migrate, error) {
 	url := MakeUrl(vars)
 
