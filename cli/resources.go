@@ -62,7 +62,7 @@ func NewResourcesCommand(name string, chVars chan data.Vars, logger Logger) cli.
 						return err
 					}
 
-					return printed(user)
+					return Printed(user)
 				},
 			},
 			{
@@ -82,7 +82,7 @@ func NewResourcesCommand(name string, chVars chan data.Vars, logger Logger) cli.
 						return err
 					}
 
-					return printed(user)
+					return Printed(user)
 				},
 			},
 			{
@@ -139,7 +139,7 @@ func NewResourcesCommand(name string, chVars chan data.Vars, logger Logger) cli.
 						return err
 					}
 
-					return printed(users)
+					return Printed(users)
 				},
 			},
 			{
@@ -159,7 +159,7 @@ func NewResourcesCommand(name string, chVars chan data.Vars, logger Logger) cli.
 						return err
 					}
 
-					return printed(group)
+					return Printed(group)
 				},
 			},
 			{
@@ -175,7 +175,7 @@ func NewResourcesCommand(name string, chVars chan data.Vars, logger Logger) cli.
 						return err
 					}
 
-					return printed(group)
+					return Printed(group)
 				},
 			},
 			{
@@ -229,7 +229,7 @@ func NewResourcesCommand(name string, chVars chan data.Vars, logger Logger) cli.
 						return err
 					}
 
-					return printed(groups)
+					return Printed(groups)
 				},
 			},
 			{
@@ -296,7 +296,7 @@ func getPassedFlagNames(ctx *cli.Context) []string {
  	return fields
 }
 
-func printed(v interface {}) error {
+func Printed(v interface {}) error {
 	j, err := json.Marshal(v)
 
 	if err != nil {
