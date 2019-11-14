@@ -2,13 +2,14 @@ package cli
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/brietsparks/xcrud/data"
 	"github.com/urfave/cli"
 	"strconv"
 )
 
-func NewResourcesCommand(name string, chVars chan data.Vars) cli.Command {
+func NewResourcesCommand(name string, chVars chan data.Vars, logger Logger) cli.Command {
 	var vars data.Vars
 	var store *data.Store
 
@@ -18,7 +19,6 @@ func NewResourcesCommand(name string, chVars chan data.Vars) cli.Command {
 	var firstName string
 	var lastName string
 	var groupName string
-
 
 	return cli.Command{
 		Name:  name,
@@ -42,12 +42,14 @@ func NewResourcesCommand(name string, chVars chan data.Vars) cli.Command {
 					id, err := getIdArg(ctx)
 
 					if err != nil {
+						logger.Error(errors.Unwrap(err))
 						return err
 					}
 
 					user, err := store.GetUserById(id)
 
 					if err != nil {
+						logger.Error(errors.Unwrap(err))
 						return err
 					}
 
@@ -67,6 +69,7 @@ func NewResourcesCommand(name string, chVars chan data.Vars) cli.Command {
 					})
 
 					if err != nil {
+						logger.Error(errors.Unwrap(err))
 						return err
 					}
 
@@ -83,6 +86,7 @@ func NewResourcesCommand(name string, chVars chan data.Vars) cli.Command {
 					id, err := getIdArg(ctx)
 
 					if err != nil {
+						logger.Error(errors.Unwrap(err))
 						return err
 					}
 
@@ -102,6 +106,7 @@ func NewResourcesCommand(name string, chVars chan data.Vars) cli.Command {
 					id, err := getIdArg(ctx)
 
 					if err != nil {
+						logger.Error(errors.Unwrap(err))
 						return err
 					}
 
@@ -134,12 +139,14 @@ func NewResourcesCommand(name string, chVars chan data.Vars) cli.Command {
 					id, err := getIdArg(ctx)
 
 					if err != nil {
+						logger.Error(errors.Unwrap(err))
 						return err
 					}
 
 					group, err := store.GetGroupById(id)
 
 					if err != nil {
+						logger.Error(errors.Unwrap(err))
 						return err
 					}
 
@@ -149,13 +156,13 @@ func NewResourcesCommand(name string, chVars chan data.Vars) cli.Command {
 			{
 				Name: "group:create",
 				Flags: []cli.Flag{
-					cli.StringFlag{Name: "FirstName", Destination: &firstName, Required: true},
-					cli.StringFlag{Name: "LastName", Destination: &lastName, Required: true},
+					cli.StringFlag{Name: "Name", Destination: &groupName, Required: true},
 				},
 				Action: func(ctx *cli.Context) error {
 					group, err := store.CreateGroup(&data.Group{Name: groupName})
 
 					if err != nil {
+						logger.Error(errors.Unwrap(err))
 						return err
 					}
 
@@ -165,13 +172,13 @@ func NewResourcesCommand(name string, chVars chan data.Vars) cli.Command {
 			{
 				Name: "group:update",
 				Flags: []cli.Flag{
-					cli.StringFlag{Name: "FirstName", Destination: &firstName},
-					cli.StringFlag{Name: "LastName", Destination: &lastName},
+					cli.StringFlag{Name: "Name", Destination: &groupName},
 				},
 				Action: func(ctx *cli.Context) error {
 					id, err := getIdArg(ctx)
 
 					if err != nil {
+						logger.Error(errors.Unwrap(err))
 						return err
 					}
 
@@ -188,6 +195,7 @@ func NewResourcesCommand(name string, chVars chan data.Vars) cli.Command {
 					id, err := getIdArg(ctx)
 
 					if err != nil {
+						logger.Error(errors.Unwrap(err))
 						return err
 					}
 
@@ -203,11 +211,12 @@ func NewResourcesCommand(name string, chVars chan data.Vars) cli.Command {
 					var groups []data.Group
 					var err error
 
-					if ctx.IsSet("GroupId") {
+					if ctx.IsSet("UserId") {
 						groups, err = store.GetGroupsByUserId(userId)
 					}
 
 					if err != nil {
+						logger.Error(errors.Unwrap(err))
 						return err
 					}
 
@@ -222,6 +231,11 @@ func NewResourcesCommand(name string, chVars chan data.Vars) cli.Command {
 				},
 				Action: func(ctx *cli.Context) error {
 					err := store.LinkGroupToUser(groupId, userId)
+
+					if err != nil {
+						logger.Error(errors.Unwrap(err))
+					}
+
 					return err
 				},
 			},
@@ -233,6 +247,11 @@ func NewResourcesCommand(name string, chVars chan data.Vars) cli.Command {
 				},
 				Action: func(ctx *cli.Context) error {
 					err := store.UnlinkGroupFromUser(groupId, userId)
+
+					if err != nil {
+						logger.Error(errors.Unwrap(err))
+					}
+
 					return err
 				},
 			},
