@@ -23,17 +23,9 @@ func init() {
 }
 
 func (s *StoreTestSuite) SetupSuite() {
-	if envPath == "" {
-		s.T().Fatal("missing variable --env <path to .env file>")
-	}
+	d := connect(s)
 
-	vars, err := data.LoadEnvVars(envPath)
-
-	if err != nil {
-		s.T().Fatalf("failed to load environment variables: %s", err)
-	}
-
-	store, err := data.NewStore(vars)
+	store, err := data.NewStore(d, 10)
 
 	if err != nil {
 		s.T().Fatalf("failed to create store: %s", err)
@@ -41,7 +33,7 @@ func (s *StoreTestSuite) SetupSuite() {
 
 	s.Store = store
 
-	err = clearTables(vars)
+	err = clearTables(d)
 
 	if err != nil {
 		s.T().Fatalf("failed to clear table: %s", err)
@@ -49,6 +41,16 @@ func (s *StoreTestSuite) SetupSuite() {
 }
 
 func (s *StoreTestSuite) TearDownSuite() {
+	d := connect(s)
+
+	err := clearTables(d)
+
+	if err != nil {
+		s.T().Fatalf("failed to clear table: %s", err)
+	}
+}
+
+func connect(s *StoreTestSuite) *sql.DB {
 	if envPath == "" {
 		s.T().Fatal("missing variable --env <path to .env file>")
 	}
@@ -59,22 +61,18 @@ func (s *StoreTestSuite) TearDownSuite() {
 		s.T().Fatalf("failed to load environment variables: %s", err)
 	}
 
-	err = clearTables(vars)
+	url := data.MakeUrl(vars)
+	d, err := sql.Open("postgres", url)
 
 	if err != nil {
-		s.T().Fatalf("failed to clear table: %s", err)
+		s.T().Fatalf("failed to connect to database: %s", err)
 	}
+
+	return d
 }
 
-func clearTables(vars data.Vars) error {
-	url := data.MakeUrl(vars)
-	db, err := sql.Open("postgres", url)
-
-	if err != nil {
-		return err
-	}
-
-	_, err = db.Query(`
+func clearTables(db *sql.DB) error {
+	_, err := db.Query(`
 		truncate table users cascade;
 		truncate table groups cascade;
 	`)

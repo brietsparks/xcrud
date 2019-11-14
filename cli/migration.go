@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"database/sql"
 	"fmt"
 	"github.com/brietsparks/xcrud/data"
 	"github.com/golang-migrate/migrate/v4"
@@ -18,7 +19,14 @@ func NewMigrateCommand(name string, chVars chan data.Vars) cli.Command {
 		Before: func(c *cli.Context) error {
 			vars = <-chVars
 
-			m, err := data.NewSchemaMigration(vars)
+			url := data.MakeUrl(vars)
+			db, err := sql.Open("postgres", url)
+
+			if err != nil {
+				return err
+			}
+
+			m, err := data.NewSchemaMigration(db, vars.Name)
 
 			if err != nil {
 				return err

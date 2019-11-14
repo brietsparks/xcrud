@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -27,10 +28,17 @@ func NewResourcesCommand(name string, chVars chan data.Vars, logger Logger) cli.
 		Before: func(context *cli.Context) error {
 			vars = <-chVars
 
-			s, err := data.NewStore(vars)
+			url := data.MakeUrl(vars)
+			db, err := sql.Open("postgres", url)
 
 			if err != nil {
-				return fmt.Errorf("failed to create store: %w", err)
+				return err
+			}
+
+			s, err := data.NewStore(db, 10)
+
+			if err != nil {
+				return err
 			}
 
 			store = s

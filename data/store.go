@@ -1,7 +1,9 @@
 package data
 
 import (
+	"database/sql"
 	"github.com/gocraft/dbr/v2"
+	"github.com/gocraft/dbr/v2/dialect"
 	"gopkg.in/go-playground/validator.v9"
 )
 
@@ -10,11 +12,14 @@ type Store struct {
 	validate *validator.Validate
 }
 
-func NewStore(vars Vars) (*Store, error) {
-	url := MakeUrl(vars)
+func NewStore(d *sql.DB, maxConn int) (*Store, error) {
+	conn := &dbr.Connection{
+		DB: d,
+		EventReceiver: &dbr.NullEventReceiver{},
+		Dialect: dialect.PostgreSQL,
+	}
 
-	conn, _ := dbr.Open("postgres", url, nil)
-	conn.SetMaxOpenConns(10)
+	conn.SetMaxOpenConns(maxConn)
 	sess := conn.NewSession(nil)
 	_, err := sess.Begin()
 
