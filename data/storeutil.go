@@ -43,7 +43,7 @@ func (s *Store) create(table string, record interface{}, columns []string) (inte
 		Load(&id)
 
 	if err != nil {
-		return nil, fmt.Errorf("failed to create record in %s: %w", table, err)
+		return nil, err
 	}
 
 	return id, nil
@@ -58,11 +58,7 @@ func (s *Store) update(table string, id interface{}, fields []string, updateSets
 		Where("id = ?", id).
 		Exec()
 
-	if err != nil {
-		return fmt.Errorf("failed to update record in %s: %w", table, err)
-	}
-
-	return nil
+	return err
 }
 
 func (s *Store) getById(table string, id interface{}, resource interface{}) (interface{}, error) {
@@ -73,7 +69,7 @@ func (s *Store) getById(table string, id interface{}, resource interface{}) (int
 		Load(resource)
 
 	if err != nil {
-		return nil, fmt.Errorf("failed to getById from %s: %w", table, err)
+		return nil, err
 	}
 
 	if count == 0 {

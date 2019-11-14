@@ -1,7 +1,6 @@
 package data
 
 import (
-	"fmt"
 	"github.com/gocraft/dbr/v2"
 	"gopkg.in/go-playground/validator.v9"
 )
@@ -25,7 +24,7 @@ func NewStore(vars Vars) (*Store, error) {
 	_, err := sess.Begin()
 
 	if err != nil {
-		return nil, fmt.Errorf("unable to create data store: %w", err)
+		return nil, NewError(err, "unable to create data store")
 	}
 
 	v := validator.New()
@@ -38,36 +37,50 @@ func NewStore(vars Vars) (*Store, error) {
 
 func (s *Store) CreateUser(u *User) (*User, error) {
 	if err := s.validate.Struct(u); err != nil {
-		return nil, fmt.Errorf("invalid user data: %w", err)
+		return nil, NewError(err, "invalid user data")
 	}
 
 	columns := []string{"first_name", "last_name",}
 	id, err := s.create("users", u, columns)
 
+	if err != nil {
+		return nil, NewError(err, "failed to create user")
+	}
+
 	if id != nil {
 		u.Id = id.(int64)
 	}
 
-	return u, err
+	return u, nil
 }
 
 func (s *Store) UpdateUser(id int64, u *User, fields ...string) error {
 	if err := s.validate.StructPartial(u, fields...); err != nil {
-		return fmt.Errorf("invalid user data: %w", err)
+		return NewError(err, "invalid user data")
 	}
 
-	return s.update("users", id, fields,
+	err :=  s.update("users", id, fields,
 		set{"FirstName", "first_name", u.FirstName},
 		set{"LastName", "last_name", u.LastName},
 	)
+
+	if err != nil {
+		return NewError(err, "failed to update user")
+	}
+
+	return nil
 }
 
 func (s *Store) GetUserById(id int64) (*User, error) {
 	u := &User{}
 	retrieved, err := s.getById("users", id, u)
 
+	if err != nil {
+		return nil, NewError(err, "failed to get user by id")
+	}
+
 	if retrieved == nil {
-		return nil, err
+		return nil, nil
 	}
 
 	return retrieved.(*User), err
@@ -77,7 +90,7 @@ func (s *Store) DeleteUser(id int64) error {
     _, err := s.db.DeleteFrom("users").Where("id = ?", id).Exec()
 
 	if err != nil {
-		return fmt.Errorf("failed to delete user: %w", err)
+		return NewError(err, "failed to delete user")
 	}
 
     return nil
@@ -85,29 +98,46 @@ func (s *Store) DeleteUser(id int64) error {
 
 func (s *Store) CreateGroup(g *Group) (*Group, error) {
 	if err := s.validate.Struct(g); err != nil {
-		return nil, fmt.Errorf("invalid group data: %w", err)
+		return nil, NewError(err, "invalid group data")
 	}
 
 	columns := []string{"name",}
 	id, err := s.create("groups", g, columns)
-	g.Id = id.(int64)
 
-	return g, err
+	if err != nil {
+		return nil, NewError(err, "failed to create group")
+	}
+
+	if id != nil {
+		g.Id = id.(int64)
+	}
+
+	return g, nil
 }
 
 func (s *Store) UpdateGroup(id int64, g *Group, fields ...string) error {
 	if err := s.validate.StructPartial(g, fields...); err != nil {
-		return fmt.Errorf("invalid group data: %w", err)
+		return NewError(err, "invalid group data")
 	}
 
-	return s.update("groups", id, fields,
+	err := s.update("groups", id, fields,
 		set{"Name", "name", g.Name},
 	)
+
+	if err != nil {
+		return NewError(err, "failed to update group")
+	}
+
+	return nil
 }
 
 func (s *Store) GetGroupById(id int64) (*Group, error) {
 	g := &Group{}
 	retrieved, err := s.getById("groups", id, g)
+
+	if err != nil {
+		return nil, NewError(err, "failed to get group by id")
+	}
 
 	if retrieved == nil {
 		return nil, err
@@ -120,7 +150,7 @@ func (s *Store) DeleteGroup(id int64) error {
 	_, err := s.db.DeleteFrom("groups").Where("id = ?", id).Exec()
 
 	if err != nil {
-		return fmt.Errorf("failed to delete group: %w", err)
+		return NewError(err, "failed to delete group")
 	}
 
 	return nil
@@ -138,7 +168,7 @@ func (s *Store) GetUsersByGroupId(groupId int64) ([]User, error) {
 	}).Load(&users)
 
 	if err != nil {
-		return nil, fmt.Errorf("failed to get users by groupId: %v", err)
+		return nil, NewError(err, "failed to get users by groupId")
 	}
 
 	return users, nil
@@ -156,7 +186,7 @@ func (s *Store) GetGroupsByUserId(userId int64) ([]Group, error) {
 	}).Load(&groups)
 
 	if err != nil {
-		return nil, fmt.Errorf("failed to get groups by userId: %v", err)
+		return nil, NewError(err, "failed to get groups by userId")
 	}
 
 	return groups, nil
@@ -169,7 +199,11 @@ func (s *Store) LinkGroupToUser(groupId int64, userId int64) error {
 		Pair("user_id", userId).
 		Exec()
 
-	return err
+	if err != nil {
+		return NewError(err, "failed to link group to user")
+	}
+
+	return nil
 }
 
 
@@ -179,5 +213,9 @@ func (s *Store) UnlinkGroupFromUser(groupId int64, userId int64) error {
 		Where("group_id = ? and user_id = ?", groupId, userId).
 		Exec()
 
-	return err
+	if err != nil {
+		return NewError(err, "failed to unlink group from user")
+	}
+
+	return nil
 }
