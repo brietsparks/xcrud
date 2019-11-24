@@ -77,13 +77,13 @@ func (s *Store) UpdateUser(id int64, u *User, fields ...string) error {
 // GetUserById gets a user by ID
 func (s *Store) GetUserById(id int64) (*User, error) {
 	u := &User{}
-	retrieved, err := s.getById("users", id, u)
+	retrieved, count, err := s.getById("users", id, u)
 
 	if err != nil {
 		return nil, NewError(err, "failed to get user by id")
 	}
 
-	if retrieved == nil {
+	if count == 0 {
 		return nil, nil
 	}
 
@@ -142,13 +142,13 @@ func (s *Store) UpdateGroup(id int64, g *Group, fields ...string) error {
 // GetGroupById gets a group by ID
 func (s *Store) GetGroupById(id int64) (*Group, error) {
 	g := &Group{}
-	retrieved, err := s.getById("groups", id, g)
+	retrieved, count, err := s.getById("groups", id, g)
 
 	if err != nil {
 		return nil, NewError(err, "failed to get group by id")
 	}
 
-	if retrieved == nil {
+	if count == 0 {
 		return nil, err
 	}
 

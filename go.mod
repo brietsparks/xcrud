@@ -3,6 +3,7 @@ module github.com/brietsparks/xcrud
 go 1.13
 
 require (
+	github.com/davecgh/go-spew v1.1.1
 	github.com/go-playground/universal-translator v0.17.0 // indirect
 	github.com/gocraft/dbr/v2 v2.6.3
 	github.com/golang-migrate/migrate/v4 v4.7.0

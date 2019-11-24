@@ -61,7 +61,7 @@ func (s *Store) update(table string, id interface{}, fields []string, updateSets
 	return err
 }
 
-func (s *Store) getById(table string, id interface{}, resource interface{}) (interface{}, error) {
+func (s *Store) getById(table string, id interface{}, resource interface{}) (interface{}, int, error) {
 	count, err := s.db.
 		Select("*").
 		From(fmt.Sprintf(`"%s"`, table)).
@@ -69,14 +69,10 @@ func (s *Store) getById(table string, id interface{}, resource interface{}) (int
 		Load(resource)
 
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
-	if count == 0 {
-		return nil, nil
-	}
-
-	return resource, nil
+	return resource, count, nil
 }
 
 func includes(strings []string, val string) bool {

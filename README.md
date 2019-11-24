@@ -1,5 +1,5 @@
-This is an example CRUD data layer with supporting concerns
-such as testing, migrations, errors/logging, and a CLI.  
+This is an example CRUD data layer with supporting concerns such as testing, schema migrations, 
+test data fixtures, validation, errors/logging, and a standalone CLI.  
 
 ## Database Setup
 1. clone the repo:
@@ -105,3 +105,15 @@ xcrud resources group:remove-user --GroupId 1 --UserId 1
 1. install: ```go get -u github.com/brietsparks/xcrud```
 
 2. see [example usage code](https://github.com/brietsparks/xcrud/blob/master/example/example.go)
+
+## Testing
+Before running the test, you will need 
+- a database instance with the correct tables
+- a .env file that points to the database (.env.test is provided, which points to the docker test database)
+  
+See above section "Database Setup".
+
+To run the tests, from the project directory run:
+```
+go test ./data/tests/ --env=$(pwd)/.env.test
+```

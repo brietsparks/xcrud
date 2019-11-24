@@ -7,13 +7,14 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/stretchr/testify/suite"
 	"gopkg.in/testfixtures.v2"
+	"log"
 	"testing"
 )
 
 type StoreTestSuite struct {
 	suite.Suite
 	Store    *data.Store
-	Fixtures *testfixtures.Context
+	fixtures *testfixtures.Context
 }
 
 var envPath string
@@ -25,6 +26,15 @@ func init() {
 func (s *StoreTestSuite) SetupSuite() {
 	d := connect(s)
 
+	// load fixtures
+	fixtures, err := testfixtures.NewFolder(d, &testfixtures.PostgreSQL{}, "../fixtures")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	s.fixtures = fixtures
+
+	// create store
 	store, err := data.NewStore(d, 10)
 
 	if err != nil {
@@ -33,6 +43,7 @@ func (s *StoreTestSuite) SetupSuite() {
 
 	s.Store = store
 
+	// clear tables
 	err = clearTables(d)
 
 	if err != nil {
@@ -80,191 +91,162 @@ func clearTables(db *sql.DB) error {
 	return err
 }
 
-func (s *StoreTestSuite) TestUser() {
-	input := &data.User{
-		FirstName: data.RandomString(5),
-		LastName:  data.RandomString(5),
+func (s *StoreTestSuite) SetupTest() {
+	testfixtures.ResetSequencesTo(1)
+
+	if err := s.fixtures.Load(); err != nil {
+		log.Fatal(err)
 	}
+}
 
-	created, err := s.Store.CreateUser(input)
+func (s *StoreTestSuite) TestGetUserById() {
+	u, _ := s.Store.GetUserById(100)
 
-	if err != nil {
-		s.T().Errorf("test failed to create user: %w", err)
+	expected := &data.User{
+		Id:        100,
+		FirstName: "A",
+		LastName:  "B",
 	}
+	s.Assert().EqualValues(expected, u)
 
-	retrieved, err := s.Store.GetUserById(created.Id)
+	u, _ = s.Store.GetUserById(1000)
+	s.Assert().Nil(u)
+}
 
-	if err != nil {
-		s.T().Errorf("test failed to get user: %w", err)
+func (s *StoreTestSuite) TestUpdateUser() {
+	_ = s.Store.UpdateUser(101, &data.User{FirstName: "abc",})
+
+	u, _ := s.Store.GetUserById(101)
+	expected := &data.User{
+		Id:        101,
+		FirstName: "C",
+		LastName:  "D",
 	}
+	s.Assert().EqualValues(expected, u)
 
-	s.Assert().EqualValues(input, retrieved)
-
-	update := &data.User{FirstName: "asdf"}
-
-	err = s.Store.UpdateUser(created.Id, update, "FirstName")
-
-	if err != nil {
-		s.T().Errorf("test failed to update user: %w", err)
+	_ = s.Store.UpdateUser(101, &data.User{FirstName: "abc",}, "FirstName")
+	u, _ = s.Store.GetUserById(101)
+	expected = &data.User{
+		Id:        101,
+		FirstName: "abc",
+		LastName:  "D",
 	}
+	s.Assert().EqualValues(expected, u)
+}
 
-	retrieved, err = s.Store.GetUserById(created.Id)
+func (s *StoreTestSuite) TestCreateUser() {
+	created, _ := s.Store.CreateUser(&data.User{
+		FirstName: "foo",
+		LastName:  "bar",
+	})
 
-	if err != nil {
-		s.T().Errorf("test failed to get user: %w", err)
-	}
+	retrieved, _ := s.Store.GetUserById(created.Id)
 
-	s.Assert().Equal(retrieved.FirstName, update.FirstName)
-	s.Assert().NotEqual(retrieved.LastName, update.LastName)
+	s.Assert().EqualValues(created, retrieved)
+}
 
-	err = s.Store.DeleteUser(created.Id)
+func (s *StoreTestSuite) TestDeleteUser() {
+	retrieved, _ := s.Store.GetUserById(102)
+	s.Assert().NotNil(retrieved)
 
-	if err != nil {
-		s.T().Errorf("test failed to delete user: %w", err)
-	}
-
-	retrieved, err = s.Store.GetUserById(created.Id)
-
-	if err != nil {
-		s.T().Errorf("test failed to get user: %w", err)
-	}
-
+	_ = s.Store.DeleteUser(102)
+	retrieved, _ = s.Store.GetUserById(102)
 	s.Assert().Nil(retrieved)
 }
 
-func (s *StoreTestSuite) TestGroup() {
-	input := &data.Group{
-		Name: data.RandomString(5),
+func (s *StoreTestSuite) TestGetGroupById() {
+	u, _ := s.Store.GetGroupById(100)
+
+	expected := &data.Group{
+		Id:   100,
+		Name: "A",
 	}
+	s.Assert().EqualValues(expected, u)
 
-	created, err := s.Store.CreateGroup(input)
+	u, _ = s.Store.GetGroupById(1000)
+	s.Assert().Nil(u)
+}
 
-	if err != nil {
-		s.T().Errorf("test failed to create group: %w", err)
+func (s *StoreTestSuite) TestUpdateGroup() {
+	_ = s.Store.UpdateGroup(101, &data.Group{Name: "abc",})
+
+	u, _ := s.Store.GetGroupById(101)
+	expected := &data.Group{
+		Id:   101,
+		Name: "B",
 	}
+	s.Assert().EqualValues(expected, u)
 
-	retrieved, err := s.Store.GetGroupById(created.Id)
-
-	if err != nil {
-		s.T().Errorf("test failed to get group: %w", err)
+	_ = s.Store.UpdateGroup(101, &data.Group{Name: "abc",}, "Name")
+	u, _ = s.Store.GetGroupById(101)
+	expected = &data.Group{
+		Id:   101,
+		Name: "abc",
 	}
+	s.Assert().EqualValues(expected, u)
+}
 
-	s.Assert().EqualValues(input, retrieved)
+func (s *StoreTestSuite) TestCreateGroup() {
+	created, _ := s.Store.CreateGroup(&data.Group{
+		Name: "foo",
+	})
 
-	update := &data.Group{Name: "asdf"}
+	retrieved, _ := s.Store.GetGroupById(created.Id)
 
-	err = s.Store.UpdateGroup(created.Id, update, "Name")
+	s.Assert().EqualValues(created, retrieved)
+}
 
-	if err != nil {
-		s.T().Errorf("test failed to update group: %w", err)
-	}
+func (s *StoreTestSuite) TestDeleteGroup() {
+	retrieved, _ := s.Store.GetGroupById(102)
+	s.Assert().NotNil(retrieved)
 
-	retrieved, err = s.Store.GetGroupById(created.Id)
-
-	if err != nil {
-		s.T().Errorf("test failed to get group: %w", err)
-	}
-
-	s.Assert().Equal(retrieved.Name, update.Name)
-
-	err = s.Store.DeleteGroup(created.Id)
-
-	if err != nil {
-		s.T().Errorf("test failed to delete group: %w", err)
-	}
-
-	retrieved, err = s.Store.GetGroupById(created.Id)
-
-	if err != nil {
-		s.T().Errorf("test failed to get group: %w", err)
-	}
-
+	_ = s.Store.DeleteGroup(102)
+	retrieved, _ = s.Store.GetGroupById(102)
 	s.Assert().Nil(retrieved)
 }
 
-func (s *StoreTestSuite) TestGroupUser() {
-	// create the resources
-	u1, err := s.Store.CreateUser(&data.User{FirstName: data.RandomString(5), LastName: data.RandomString(5),})
-	if err != nil {
-		s.T().Errorf("test failed to create user: %w", err)
+func (s *StoreTestSuite) TestGetUsersByGroupId() {
+	users, _ := s.Store.GetUsersByGroupId(201)
+
+	expected := []data.User{
+		{Id: 201, FirstName: "I", LastName: "J"},
+		{Id: 202, FirstName: "K", LastName: "L"},
 	}
 
-	u2, err := s.Store.CreateUser(&data.User{FirstName: data.RandomString(5), LastName: data.RandomString(5),})
-	if err != nil {
-		s.T().Errorf("test failed to create user: %w", err)
+	s.Assert().Equal(expected, users)
+}
+
+func (s *StoreTestSuite) TestGetGroupsByUserId() {
+	groups, _ := s.Store.GetGroupsByUserId(202)
+
+	expected := []data.Group{
+		{Id: 201, Name: "E"},
+		{Id: 202, Name: "F"},
 	}
 
-	g1, err := s.Store.CreateGroup(&data.Group{Name: data.RandomString(5),})
-	if err != nil {
-		s.T().Errorf("test failed to create group: %w", err)
-	}
+	s.Assert().Equal(expected, groups)
+}
 
-	g2, err := s.Store.CreateGroup(&data.Group{Name: data.RandomString(5),})
-	if err != nil {
-		s.T().Errorf("test failed to create group: %w", err)
-	}
+func (s *StoreTestSuite) TestLinkGroupToUser() {
+	_ = s.Store.LinkGroupToUser(200, 200)
 
-	// link the resources
-	err = s.Store.LinkGroupToUser(g1.Id, u1.Id)
-	if err != nil {
-		s.T().Errorf("test failed to link group to user: %w", err)
-	}
+	users, _ := s.Store.GetUsersByGroupId(200)
+	expectedUsers := []data.User{{Id: 200, FirstName: "G", LastName: "H"}}
+	s.Assert().EqualValues(expectedUsers, users)
 
-	err = s.Store.LinkGroupToUser(g2.Id, u1.Id)
-	if err != nil {
-		s.T().Errorf("test failed to link group to user: %w", err)
-	}
+	groups, _ := s.Store.GetGroupsByUserId(200)
+	expectedGroups := []data.Group{{Id: 200, Name: "D"}}
+	s.Assert().EqualValues(expectedGroups, groups)
+}
 
-	err = s.Store.LinkGroupToUser(g2.Id, u2.Id)
-	if err != nil {
-		s.T().Errorf("test failed to link group to user: %w", err)
-	}
+func (s *StoreTestSuite) TestUnlinkGroupFromUser() {
+    _ = s.Store.UnlinkGroupFromUser(203, 203)
 
-	if err != nil {
-		s.T().Errorf("test failed to link group to user: %w", err)
-	}
+    users, _ := s.Store.GetUsersByGroupId(203)
+	s.Assert().Nil(users)
 
-	// verify
-	users, err := s.Store.GetUsersByGroupId(g1.Id)
-	if err != nil {
-		s.T().Errorf("test failed to get users by group id: %w", err)
-	}
-	s.Assert().EqualValues([]data.User{*u1}, users)
-
-	users, err = s.Store.GetUsersByGroupId(g2.Id)
-	if err != nil {
-		s.T().Errorf("test failed to get users by group id: %w", err)
-	}
-	s.Assert().EqualValues([]data.User{*u1, *u2}, users)
-
-	groups, err := s.Store.GetGroupsByUserId(u1.Id)
-	if err != nil {
-		s.T().Errorf("test failed to get groups by user id: %w", err)
-	}
-	s.Assert().EqualValues([]data.Group{*g1, *g2}, groups)
-
-	groups, err = s.Store.GetGroupsByUserId(u2.Id)
-	if err != nil {
-		s.T().Errorf("test failed to get groups by user id: %w", err)
-	}
-	s.Assert().EqualValues([]data.Group{*g2}, groups)
-
-	// unlink the resource
-	err = s.Store.UnlinkGroupFromUser(g2.Id, u1.Id)
-
-	// verify
-	users, err = s.Store.GetUsersByGroupId(g2.Id)
-	if err != nil {
-		s.T().Errorf("test failed to get users by group id: %w", err)
-	}
-	s.Assert().EqualValues([]data.User{*u2}, users)
-
-	groups, err = s.Store.GetGroupsByUserId(u1.Id)
-	if err != nil {
-		s.T().Errorf("test failed to get groups by user id: %w", err)
-	}
-	s.Assert().EqualValues([]data.Group{*g1}, groups)
-
+	groups, _ := s.Store.GetGroupsByUserId(203)
+	s.Assert().Nil(groups)
 }
 
 func TestStoreTestSuite(t *testing.T) {
