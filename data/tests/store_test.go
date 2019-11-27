@@ -2,6 +2,7 @@ package tests
 
 import (
 	"database/sql"
+	"errors"
 	"flag"
 	"github.com/brietsparks/xcrud/data"
 	_ "github.com/lib/pq"
@@ -132,6 +133,10 @@ func (s *StoreTestSuite) TestUpdateUser() {
 		LastName:  "D",
 	}
 	s.Assert().EqualValues(expected, u)
+
+	err := s.Store.UpdateUser(1000, &data.User{FirstName: "abc"}, "FirstName")
+	s.Assert().Equal(data.ErrResourceDNE, err.Error())
+	s.Assert().Nil(errors.Unwrap(err))
 }
 
 func (s *StoreTestSuite) TestCreateUser() {
@@ -152,6 +157,10 @@ func (s *StoreTestSuite) TestDeleteUser() {
 	_ = s.Store.DeleteUser(102)
 	retrieved, _ = s.Store.GetUserById(102)
 	s.Assert().Nil(retrieved)
+
+	err := s.Store.DeleteUser(1000)
+	s.Assert().Equal(data.ErrResourceDNE, err.Error())
+	s.Assert().Nil(errors.Unwrap(err))
 }
 
 func (s *StoreTestSuite) TestGetGroupById() {
@@ -184,6 +193,10 @@ func (s *StoreTestSuite) TestUpdateGroup() {
 		Name: "abc",
 	}
 	s.Assert().EqualValues(expected, u)
+
+	err := s.Store.UpdateGroup(1000, &data.Group{Name: "abc",}, "Name")
+	s.Assert().Equal(data.ErrResourceDNE, err.Error())
+	s.Assert().Nil(errors.Unwrap(err))
 }
 
 func (s *StoreTestSuite) TestCreateGroup() {
@@ -203,6 +216,10 @@ func (s *StoreTestSuite) TestDeleteGroup() {
 	_ = s.Store.DeleteGroup(102)
 	retrieved, _ = s.Store.GetGroupById(102)
 	s.Assert().Nil(retrieved)
+
+	err := s.Store.DeleteGroup(1000)
+	s.Assert().Equal(data.ErrResourceDNE, err.Error())
+	s.Assert().Nil(errors.Unwrap(err))
 }
 
 func (s *StoreTestSuite) TestGetUsersByGroupId() {
@@ -237,12 +254,16 @@ func (s *StoreTestSuite) TestLinkGroupToUser() {
 	groups, _ := s.Store.GetGroupsByUserId(200)
 	expectedGroups := []data.Group{{Id: 200, Name: "D"}}
 	s.Assert().EqualValues(expectedGroups, groups)
+
+	err := s.Store.LinkGroupToUser(200, 200)
+	s.Assert().Equal(data.ErrGroupUserAlreadyLinked, err.Error())
+	s.Assert().Equal(data.DbErrGroupUserAlreadyLinked, errors.Unwrap(err).Error())
 }
 
 func (s *StoreTestSuite) TestUnlinkGroupFromUser() {
-    _ = s.Store.UnlinkGroupFromUser(203, 203)
+   _ = s.Store.UnlinkGroupFromUser(203, 203)
 
-    users, _ := s.Store.GetUsersByGroupId(203)
+   users, _ := s.Store.GetUsersByGroupId(203)
 	s.Assert().Nil(users)
 
 	groups, _ := s.Store.GetGroupsByUserId(203)

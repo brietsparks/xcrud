@@ -1,6 +1,7 @@
 package data
 
 import (
+	"errors"
 	"fmt"
 	"github.com/gocraft/dbr/v2"
 )
@@ -52,11 +53,25 @@ func (s *Store) create(table string, record interface{}, columns []string) (inte
 func (s *Store) update(table string, id interface{}, fields []string, updateSets ...set) error {
 	setMap := makeSetMap(fields, updateSets...)
 
-	_, err := s.db.
+	result, err := s.db.
 		Update(table).
 		SetMap(setMap).
 		Where("id = ?", id).
 		Exec()
+
+	if err != nil {
+		return err
+	}
+
+	count, err := result.RowsAffected()
+
+	if err != nil {
+		return err
+	}
+
+	if count == 0 {
+		return errors.New(ErrResourceDNE)
+	}
 
 	return err
 }
@@ -73,6 +88,26 @@ func (s *Store) getById(table string, id interface{}, resource interface{}) (int
 	}
 
 	return resource, count, nil
+}
+
+func (s *Store) delete(table string, id interface{}) error {
+	result, err := s.db.DeleteFrom(table).Where("id = ?", id).Exec()
+
+	if err != nil {
+		return err
+	}
+
+	count, err := result.RowsAffected()
+
+	if err != nil {
+		return err
+	}
+
+	if count == 0 {
+		return errors.New(ErrResourceDNE)
+	}
+
+	return err
 }
 
 func includes(strings []string, val string) bool {
