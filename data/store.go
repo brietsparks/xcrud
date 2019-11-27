@@ -43,7 +43,7 @@ func (s *Store) CreateUser(u *User) (*User, error) {
 	}
 
 	columns := []string{"first_name", "last_name",}
-	id, err := s.create("users", u, columns)
+	id, err := s.create("user", u, columns)
 
 	if err != nil {
 		return nil, NewError(err)
@@ -63,7 +63,7 @@ func (s *Store) UpdateUser(id int64, u *User, fields ...string) error {
 		return NewError(err)
 	}
 
-	err := s.update("users", id, fields,
+	err := s.update("user", id, fields,
 		set{"FirstName", "first_name", u.FirstName},
 		set{"LastName", "last_name", u.LastName},
 	)
@@ -74,7 +74,7 @@ func (s *Store) UpdateUser(id int64, u *User, fields ...string) error {
 // GetUserById gets a user by ID
 func (s *Store) GetUserById(id int64) (*User, error) {
 	u := &User{}
-	retrieved, count, err := s.getById("users", id, u)
+	retrieved, count, err := s.getById("user", id, u)
 
 	if err != nil {
 		return nil, NewError(err)
@@ -89,7 +89,7 @@ func (s *Store) GetUserById(id int64) (*User, error) {
 
 // DeleteUser deletes a user
 func (s *Store) DeleteUser(id int64) error {
-    err := s.delete("users", id)
+    err := s.delete("user", id)
     return NewError(err)
 }
 
@@ -100,7 +100,7 @@ func (s *Store) CreateGroup(g *Group) (*Group, error) {
 	}
 
 	columns := []string{"name",}
-	id, err := s.create("groups", g, columns)
+	id, err := s.create("group", g, columns)
 
 	if err != nil {
 		return nil, NewError(err)
@@ -120,7 +120,7 @@ func (s *Store) UpdateGroup(id int64, g *Group, fields ...string) error {
 		return NewError(err)
 	}
 
-	err := s.update("groups", id, fields,
+	err := s.update("group", id, fields,
 		set{"Name", "name", g.Name},
 	)
 
@@ -130,7 +130,7 @@ func (s *Store) UpdateGroup(id int64, g *Group, fields ...string) error {
 // GetGroupById gets a group by ID
 func (s *Store) GetGroupById(id int64) (*Group, error) {
 	g := &Group{}
-	retrieved, count, err := s.getById("groups", id, g)
+	retrieved, count, err := s.getById("group", id, g)
 
 	if err != nil {
 		return nil, NewError(err)
@@ -145,7 +145,7 @@ func (s *Store) GetGroupById(id int64) (*Group, error) {
 
 // DeleteUser deletes a group
 func (s *Store) DeleteGroup(id int64) error {
-	err := s.delete("groups", id)
+	err := s.delete("group", id)
 	return NewError(err)
 }
 
@@ -154,9 +154,9 @@ func (s *Store) GetUsersByGroupId(groupId int64) ([]User, error) {
 	var users []User
 
 	_, err := s.selectJunction(s.db, groupId, junction{
-		table1: "users",
-		table2: "groups",
-		junctionTable: "groups_users",
+		table1: "user",
+		table2: "group",
+		junctionTable: "group_user",
 		junctionFk1: "user_id",
 		junctionFk2: "group_id",
 	}).Load(&users)
@@ -173,9 +173,9 @@ func (s *Store) GetGroupsByUserId(userId int64) ([]Group, error) {
     var groups []Group
 
 	_, err := s.selectJunction(s.db, userId, junction{
-		table1: "groups",
-		table2: "users",
-		junctionTable: "groups_users",
+		table1: "group",
+		table2: "user",
+		junctionTable: "group_user",
 		junctionFk1: "group_id",
 		junctionFk2: "user_id",
 	}).Load(&groups)
@@ -190,7 +190,7 @@ func (s *Store) GetGroupsByUserId(userId int64) ([]Group, error) {
 // LinkGroupToUser links a group to a user
 func (s *Store) LinkGroupToUser(groupId int64, userId int64) error {
 	_, err := s.db.
-		InsertInto("groups_users").
+		InsertInto("group_user").
 		Pair("group_id", groupId).
 		Pair("user_id", userId).
 		Exec()
@@ -201,7 +201,7 @@ func (s *Store) LinkGroupToUser(groupId int64, userId int64) error {
 // UnlinkGroupFromUser unlinks a group from a user
 func (s *Store) UnlinkGroupFromUser(groupId int64, userId int64) error {
 	_, err := s.db.
-		DeleteFrom("groups_users").
+		DeleteFrom("group_user").
 		Where("group_id = ? and user_id = ?", groupId, userId).
 		Exec()
 

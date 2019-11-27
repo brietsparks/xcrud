@@ -7,13 +7,13 @@ import (
 )
 
 type junction struct {
-	table1 string
-	table2 string
+	table1        string
+	table2        string
 	junctionTable string
-	table1Pk string
-	table2Pk string
-	junctionFk1 string
-	junctionFk2 string
+	table1Pk      string
+	table2Pk      string
+	junctionFk1   string
+	junctionFk2   string
 }
 
 func (s *Store) selectJunction(db *dbr.Session, lookupId interface{}, j junction) *dbr.SelectStmt {
@@ -25,12 +25,23 @@ func (s *Store) selectJunction(db *dbr.Session, lookupId interface{}, j junction
 		j.table2Pk = "id"
 	}
 
+	// wrapping table names in quotes prevents errors when tables/columns are named after reserved words
 	return db.
-		Select(j.table1 + ".*").
-		From(j.table1).
-		Join(j.junctionTable, fmt.Sprintf("%s.%s = %s.%s", j.table1, j.table1Pk, j.junctionTable, j.junctionFk1)).
-		Join(j.table2, fmt.Sprintf("%s.%s = %s.%s", j.table2, j.table2Pk, j.junctionTable, j.junctionFk2)).
-		Where(fmt.Sprintf("%s.%s = ?", j.table2, j.table2Pk), lookupId)
+		Select(quotes(j.table1)+".*").
+		From(quotes(j.table1)).
+		Join(
+			j.junctionTable,
+			fmt.Sprintf("%s.%s = %s.%s", quotes(j.table1), j.table1Pk, j.junctionTable, j.junctionFk1),
+		).
+		Join(
+			j.table2,
+			fmt.Sprintf("%s.%s = %s.%s", quotes(j.table2), j.table2Pk, j.junctionTable, j.junctionFk2),
+		).
+		Where(fmt.Sprintf("%s.%s = ?", quotes(j.table2), j.table2Pk), lookupId)
+}
+
+func quotes(s string) string {
+	return fmt.Sprintf("\"%s\"", s)
 }
 
 func (s *Store) create(table string, record interface{}, columns []string) (interface{}, error) {
@@ -137,6 +148,3 @@ func makeSetMap(fields []string, sets ...set) map[string]interface{} {
 
 	return setMap
 }
-
-
-

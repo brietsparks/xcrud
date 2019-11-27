@@ -10,7 +10,7 @@ test data fixtures, validation, errors/logging, and a standalone CLI.
 
     ```go install```
 
-3. setup a postgres database instance. If you already one, you can skip this. Note, this step uses the Dockerfile provided in this project, but you can connect however you want.
+3. setup a postgres database instance. This project provides one via Docker:
    
     Build the image:
     ```

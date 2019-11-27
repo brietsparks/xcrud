@@ -85,8 +85,9 @@ func connect(s *StoreTestSuite) *sql.DB {
 
 func clearTables(db *sql.DB) error {
 	_, err := db.Query(`
-		truncate table users cascade;
-		truncate table groups cascade;
+		truncate table "user" cascade;
+		truncate table "group" cascade;
+		truncate table "group_user" cascade;
 	`)
 
 	return err
@@ -261,9 +262,9 @@ func (s *StoreTestSuite) TestLinkGroupToUser() {
 }
 
 func (s *StoreTestSuite) TestUnlinkGroupFromUser() {
-   _ = s.Store.UnlinkGroupFromUser(203, 203)
+	_ = s.Store.UnlinkGroupFromUser(203, 203)
 
-   users, _ := s.Store.GetUsersByGroupId(203)
+	users, _ := s.Store.GetUsersByGroupId(203)
 	s.Assert().Nil(users)
 
 	groups, _ := s.Store.GetGroupsByUserId(203)

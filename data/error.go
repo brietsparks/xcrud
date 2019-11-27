@@ -39,9 +39,9 @@ var storeMessages = []string{
 }
 
 // error messages that originate from the database and contain potentially sensitive database implementation details
-const DbErrGroupUserAlreadyLinked = "pq: duplicate key value violates unique constraint \"groups_users_pkey\""
+const DbErrGroupUserAlreadyLinked = "pq: duplicate key value violates unique constraint \"group_user_pkey\""
 const ErrGroupUserAlreadyLinked = "group already linked to user"
-const DbErrGroupOrUserDNE = "pq: insert or update on table \"groups_users\" violates foreign key constraint \"groups_users_group_id_fkey\""
+const DbErrGroupOrUserDNE = "pq: insert or update on table \"group_user\" violates foreign key constraint \"group_user_group_id_fkey\""
 const ErrGroupOrUserDNE = "group or user does not exist"
 var dbMessages = map[string]string{
 	ErrResourceDNE: ErrResourceDNE,
